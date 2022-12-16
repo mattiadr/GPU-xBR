@@ -2,10 +2,8 @@
 #define XBR_UTILS
 
 #include "img_utils.h"
+#include "xBR_interpolations.h"
 
-#define INT1_even 0.5
-#define INT1_odd_s 0.125
-#define INT1_odd_l 0.875
 
 #define ABS(x) tmp = x >> 15; x ^= tmp; x += tmp & 1;
 
@@ -20,6 +18,11 @@ unsigned int d(PixelYUV a, PixelYUV b) {
 	return 48 * y + 7 * u + 6 * v;
 }
 
+int YUV_equals(PixelYUV a, PixelYUV b) {
+	// TODO ??
+	return d(a, b) < 800;
+}
+
 PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, unsigned int row, unsigned int col) {
 	if (row >= rows) return { 0, 0, 0 };
 	if (col >= cols) return { 0, 0, 0 };
@@ -30,14 +33,6 @@ PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, unsigned
 	if (row >= rows) return { 0, 0, 0 };
 	if (col >= cols) return { 0, 0, 0 };
 	return input[row * cols + col];
-}
-
-PixelRGB mix_colors(PixelRGB a, PixelRGB b, double percent) {
-	PixelRGB ret;
-	ret.R = a.R * (1 - percent) + b.R * percent;
-	ret.G = a.G * (1 - percent) + b.G * percent;
-	ret.B = a.B * (1 - percent) + b.B * percent;
-	return ret;
 }
 
 /**
@@ -135,23 +130,15 @@ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, Pixe
 		PixelRGB H_rgb = get_RGB(rows, cols, inputRGB, row+1, col);
 		PixelRGB newColor = d(E, F) <= d(E, H) ? F_rgb : H_rgb;
 
-		switch (scaleFactor) {
-		case 2:
-			out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT1_even);
-			break;
-		case 3:
-			out[1 * out_cols + 2] = mix_colors(out[1 * out_cols + 2], newColor, INT1_odd_s);
-			out[2 * out_cols + 1] = mix_colors(out[2 * out_cols + 1], newColor, INT1_odd_s);
-			out[2 * out_cols + 2] = mix_colors(out[2 * out_cols + 2], newColor, INT1_odd_l);
-			break;
-		case 4:
-			out[2 * out_cols + 3] = mix_colors(out[2 * out_cols + 3], newColor, INT1_even);
-			out[3 * out_cols + 2] = mix_colors(out[3 * out_cols + 2], newColor, INT1_even);
-			out[3 * out_cols + 3] = newColor;
-			break;
-		default:
-			fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
-		}
+		if (YUV_equals(F, G) && YUV_equals(C, H)) {
+			BR_INT2_B(scaleFactor, out, out_cols, newColor);
+			BR_INT2_R(scaleFactor, out, out_cols, newColor);
+		} else if (YUV_equals(F, G))
+			BR_INT2_B(scaleFactor, out, out_cols, newColor);
+		else if (YUV_equals(C, H))
+			BR_INT2_R(scaleFactor, out, out_cols, newColor);
+		else
+			BR_INT1(scaleFactor, out, out_cols, newColor);
 	}
 
 	if (edgeBL) {
@@ -159,23 +146,15 @@ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, Pixe
 		PixelRGB H_rgb = get_RGB(rows, cols, inputRGB, row+1, col);
 		PixelRGB newColor = d(D, E) <= d(E, H) ? D_rgb : H_rgb;
 
-		switch (scaleFactor) {
-		case 2:
-			out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT1_even);
-			break;
-		case 3:
-			out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT1_odd_s);
-			out[2 * out_cols + 0] = mix_colors(out[2 * out_cols + 0], newColor, INT1_odd_l);
-			out[2 * out_cols + 1] = mix_colors(out[2 * out_cols + 1], newColor, INT1_odd_s);
-			break;
-		case 4:
-			out[2 * out_cols + 0] = mix_colors(out[2 * out_cols + 0], newColor, INT1_even);
-			out[3 * out_cols + 0] = newColor;
-			out[3 * out_cols + 1] = mix_colors(out[3 * out_cols + 1], newColor, INT1_even);
-			break;
-		default:
-			fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
-		}
+		if (YUV_equals(D, I) && YUV_equals(A, H)) {
+			BL_INT2_B(scaleFactor, out, out_cols, newColor);
+			BL_INT2_L(scaleFactor, out, out_cols, newColor);
+		} else if (YUV_equals(D, I))
+			BL_INT2_B(scaleFactor, out, out_cols, newColor);
+		else if (YUV_equals(A, H))
+			BL_INT2_L(scaleFactor, out, out_cols, newColor);
+		else
+			BL_INT1(scaleFactor, out, out_cols, newColor);
 	}
 
 	if (edgeTL) {
@@ -183,23 +162,15 @@ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, Pixe
 		PixelRGB D_rgb = get_RGB(rows, cols, inputRGB, row, col-1);
 		PixelRGB newColor = d(B, E) <= d(D, E) ? B_rgb : D_rgb;
 
-		switch (scaleFactor) {
-		case 2:
-			out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT1_even);
-			break;
-		case 3:
-			out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT1_odd_l);
-			out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT1_odd_s);
-			out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT1_odd_s);
-			break;
-		case 4:
-			out[0 * out_cols + 0] = newColor;
-			out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT1_even);
-			out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT1_even);
-			break;
-		default:
-			fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
-		}
+		if (YUV_equals(C, D) && YUV_equals(B, G)) {
+			TL_INT2_T(scaleFactor, out, out_cols, newColor);
+			TL_INT2_L(scaleFactor, out, out_cols, newColor);
+		} else if (YUV_equals(C, D))
+			TL_INT2_T(scaleFactor, out, out_cols, newColor);
+		else if (YUV_equals(B, G))
+			TL_INT2_L(scaleFactor, out, out_cols, newColor);
+		else
+			TL_INT1(scaleFactor, out, out_cols, newColor);
 	}
 
 	if (edgeTR) {
@@ -207,23 +178,15 @@ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, Pixe
 		PixelRGB F_rgb = get_RGB(rows, cols, inputRGB, row, col+1);
 		PixelRGB newColor = d(B, E) <= d(E, F) ? B_rgb : F_rgb;
 
-		switch (scaleFactor) {
-		case 2:
-			out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT1_even);
-			break;
-		case 3:
-			out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT1_odd_s);
-			out[1 * out_cols + 2] = mix_colors(out[1 * out_cols + 2], newColor, INT1_odd_s);
-			out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT1_odd_l);
-			break;
-		case 4:
-			out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT1_even);
-			out[1 * out_cols + 3] = mix_colors(out[1 * out_cols + 3], newColor, INT1_even);
-			out[0 * out_cols + 3] = newColor;
-			break;
-		default:
-			fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
-		}
+		if (YUV_equals(A, F) && YUV_equals(B, I)) {
+			TR_INT2_T(scaleFactor, out, out_cols, newColor);
+			TR_INT2_R(scaleFactor, out, out_cols, newColor);
+		} else if (YUV_equals(A, F))
+			TR_INT2_T(scaleFactor, out, out_cols, newColor);
+		else if (YUV_equals(B, I))
+			TR_INT2_R(scaleFactor, out, out_cols, newColor);
+		else
+			TR_INT1(scaleFactor, out, out_cols, newColor);
 	}
 }
 
