@@ -7,7 +7,7 @@
 
 #define ABS(x) tmp = x >> 15; x ^= tmp; x += tmp & 1;
 
-unsigned int d(PixelYUV a, PixelYUV b) {
+__host__ __device__ unsigned int d(PixelYUV a, PixelYUV b) {
 	uint16_t tmp;
 	int16_t y = a.Y - b.Y;
 	ABS(y);
@@ -18,18 +18,18 @@ unsigned int d(PixelYUV a, PixelYUV b) {
 	return 48 * y + 7 * u + 6 * v;
 }
 
-int YUV_equals(PixelYUV a, PixelYUV b) {
+__host__ __device__ int YUV_equals(PixelYUV a, PixelYUV b) {
 	// TODO ??
 	return d(a, b) < 800;
 }
 
-PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, unsigned int row, unsigned int col) {
+__host__ __device__ PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, unsigned int row, unsigned int col) {
 	if (row >= rows) return { 0, 0, 0 };
 	if (col >= cols) return { 0, 0, 0 };
 	return input[row * cols + col];
 }
 
-PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, unsigned int row, unsigned int col) {
+__host__ __device__ PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, unsigned int row, unsigned int col) {
 	if (row >= rows) return { 0, 0, 0 };
 	if (col >= cols) return { 0, 0, 0 };
 	return input[row * cols + col];
@@ -57,7 +57,7 @@ PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, unsigned
  *
  * ex: wdBRO = weighted distance, bottom right direction, orthogonal
  **/
-void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, unsigned int scaleFactor, unsigned int row, unsigned int col) {
+__host__ __device__ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, unsigned int scaleFactor, unsigned int row, unsigned int col) {
 	int edgeBR;
 	int edgeBL;
 	int edgeTL;
@@ -188,6 +188,7 @@ void expand_pixel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, Pixe
 		else
 			TR_INT1(scaleFactor, out, out_cols, newColor);
 	}
+
 }
 
 #endif

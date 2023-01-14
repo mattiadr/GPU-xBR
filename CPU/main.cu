@@ -2,8 +2,8 @@
 #include <opencv2/videoio.hpp>
 #include <iostream>
 
-#include "img_utils.h"
-#include "xBR_utils.h"
+#include "../common/img_utils.h"
+#include "../common/xBR_utils.h"
 
 
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *input, PixelRGB *output, unsigned int scaleFactor) {
@@ -66,7 +66,8 @@ int main(int argc, char const *argv[]) {
 	std::string output_path = argv[3];
 	int scaleFactor = atoi(argv[1]);
 
-	expand_video(input_path, output_path, scaleFactor);
+	// expand_video(input_path, output_path, scaleFactor);
+	expand_image(input_path, output_path, scaleFactor);
 
 	return 0;
 }
