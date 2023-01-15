@@ -73,52 +73,42 @@ __host__ __device__ void expand_pixel(unsigned int rows, unsigned int cols, Pixe
 	PixelYUV G = get_YUV(rows, cols, inputYUV, row+1, col-1);
 	PixelYUV H = get_YUV(rows, cols, inputYUV, row+1, col);
 	PixelYUV I = get_YUV(rows, cols, inputYUV, row+1, col+1);
-	{
-		PixelYUV A1 = get_YUV(rows, cols, inputYUV, row-2, col-1);
-		PixelYUV B1 = get_YUV(rows, cols, inputYUV, row-2, col);
-		PixelYUV C1 = get_YUV(rows, cols, inputYUV, row-2, col+1);
-		PixelYUV A0 = get_YUV(rows, cols, inputYUV, row-1, col-2);
-		PixelYUV C4 = get_YUV(rows, cols, inputYUV, row-1, col+2);
-		PixelYUV D0 = get_YUV(rows, cols, inputYUV, row, col-2);
-		PixelYUV F4 = get_YUV(rows, cols, inputYUV, row, col+2);
-		PixelYUV G0 = get_YUV(rows, cols, inputYUV, row+1, col-2);
-		PixelYUV I4 = get_YUV(rows, cols, inputYUV, row+1, col+2);
-		PixelYUV G5 = get_YUV(rows, cols, inputYUV, row+2, col-1);
-		PixelYUV H5 = get_YUV(rows, cols, inputYUV, row+2, col);
-		PixelYUV I5 = get_YUV(rows, cols, inputYUV, row+2, col+1);
 
-		unsigned int wdBRO = d(C, E) + d(E, G) + d(F4, I) + d(I, H5) + 4*d(F, H);
-		unsigned int wdBRP = d(B, F) + d(F, I4) + d(D, H) + d(H, I5) + 4*d(E, I);
-		edgeBR = wdBRO < wdBRP;
+	PixelYUV A1 = get_YUV(rows, cols, inputYUV, row-2, col-1);
+	PixelYUV B1 = get_YUV(rows, cols, inputYUV, row-2, col);
+	PixelYUV C1 = get_YUV(rows, cols, inputYUV, row-2, col+1);
+	PixelYUV A0 = get_YUV(rows, cols, inputYUV, row-1, col-2);
+	PixelYUV C4 = get_YUV(rows, cols, inputYUV, row-1, col+2);
+	PixelYUV D0 = get_YUV(rows, cols, inputYUV, row, col-2);
+	PixelYUV F4 = get_YUV(rows, cols, inputYUV, row, col+2);
+	PixelYUV G0 = get_YUV(rows, cols, inputYUV, row+1, col-2);
+	PixelYUV I4 = get_YUV(rows, cols, inputYUV, row+1, col+2);
+	PixelYUV G5 = get_YUV(rows, cols, inputYUV, row+2, col-1);
+	PixelYUV H5 = get_YUV(rows, cols, inputYUV, row+2, col);
+	PixelYUV I5 = get_YUV(rows, cols, inputYUV, row+2, col+1);
 
-		unsigned int wdBLO = d(A, E) + d(E, I) + d(D0, G) + d(G, H5) + 4*d(D, H);
-		unsigned int wdBLP = d(B, D) + d(D, G0) + d(F, H) + d(H, G5) + 4*d(E, G);
-		edgeBL = wdBLO < wdBLP;
+	unsigned int wdBRO = d(C, E) + d(E, G) + d(F4, I) + d(I, H5) + 4*d(F, H);
+	unsigned int wdBRP = d(B, F) + d(F, I4) + d(D, H) + d(H, I5) + 4*d(E, I);
+	edgeBR = wdBRO < wdBRP;
 
-		unsigned int wdTLO = d(C, E) + d(E, G) + d(B1, A) + d(A, D0) + 4*d(B, D);
-		unsigned int wdTLP = d(A1, B) + d(B, F) + d(A0, D) + d(D, H) + 4*d(A, E);
-		edgeTL = wdTLO < wdTLP;
+	unsigned int wdBLO = d(A, E) + d(E, I) + d(D0, G) + d(G, H5) + 4*d(D, H);
+	unsigned int wdBLP = d(B, D) + d(D, G0) + d(F, H) + d(H, G5) + 4*d(E, G);
+	edgeBL = wdBLO < wdBLP;
 
-		unsigned int wdTRO = d(A, E) + d(E, I) + d(B1, C) + d(C, F4) + 4*d(B, F);
-		unsigned int wdTRP = d(C1, B) + d(B, D) + d(C4, F) + d(F, H) + 4*d(C, E);
-		edgeTR = wdTRO < wdTRP;
-	}
+	unsigned int wdTLO = d(C, E) + d(E, G) + d(B1, A) + d(A, D0) + 4*d(B, D);
+	unsigned int wdTLP = d(A1, B) + d(B, F) + d(A0, D) + d(D, H) + 4*d(A, E);
+	edgeTL = wdTLO < wdTLP;
+
+	unsigned int wdTRO = d(A, E) + d(E, I) + d(B1, C) + d(C, F4) + 4*d(B, F);
+	unsigned int wdTRP = d(C1, B) + d(B, D) + d(C4, F) + d(F, H) + 4*d(C, E);
+	edgeTR = wdTRO < wdTRP;
+
 
 	// interpolation
-	PixelRGB A_rgb = get_RGB(rows, cols, inputRGB, row-1, col-1);
-	PixelRGB B_rgb = get_RGB(rows, cols, inputRGB, row-1, col);
-	PixelRGB C_rgb = get_RGB(rows, cols, inputRGB, row-1, col+1);
-	PixelRGB D_rgb = get_RGB(rows, cols, inputRGB, row, col-1);
-	PixelRGB E_rgb = get_RGB(rows, cols, inputRGB, row, col);
-	PixelRGB F_rgb = get_RGB(rows, cols, inputRGB, row, col+1);
-	PixelRGB G_rgb = get_RGB(rows, cols, inputRGB, row+1, col-1);
-	PixelRGB H_rgb = get_RGB(rows, cols, inputRGB, row+1, col);
-	PixelRGB I_rgb = get_RGB(rows, cols, inputRGB, row+1, col+1);
-
-	// init output
 	unsigned int out_cols = cols * scaleFactor;
 	PixelRGB *out = &output[row * out_cols * scaleFactor + col * scaleFactor];
 
+	PixelRGB E_rgb = get_RGB(rows, cols, inputRGB, row, col);
 	for (int r = 0; r < scaleFactor; r++) {
 		for (int c = 0; c < scaleFactor; c++) {
 			out[r * out_cols + c] = E_rgb;

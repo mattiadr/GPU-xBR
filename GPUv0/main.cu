@@ -30,7 +30,7 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
     }
 
     // TODO: reduce number of registers for the kernel
-    threadsPerBlock = dim3(min(cols, 17), min(rows, 17));
+    threadsPerBlock = dim3(min(cols, 32), min(rows, 32));
 	blocks = dim3(ceil(cols / (float)threadsPerBlock.x), ceil(rows / (float)threadsPerBlock.y));
 
 	printf("Creating (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
