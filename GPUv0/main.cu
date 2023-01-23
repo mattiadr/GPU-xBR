@@ -20,29 +20,28 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
 	dim3 threadsPerBlock = dim3(min(1024, rows * cols));
 	dim3 blocks = dim3(ceil(rows * cols / (float)threadsPerBlock.x));
 	
-	printf("Creating (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+	printf("rgb_to_yuv_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	rgb_to_yuv_kernel<<<blocks, threadsPerBlock>>>(rows * cols, d_input, d_yuv_data);
 	cudaError_t err = cudaDeviceSynchronize();
 
-    if (err != cudaSuccess){
-        printf("Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
-        exit(EXIT_FAILURE);
-    }
+	if (err != cudaSuccess){
+		printf("Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
+		exit(EXIT_FAILURE);
+	}
 
-    // TODO: reduce number of registers for the kernel
-    threadsPerBlock = dim3(min(cols, 32), min(rows, 32));
+	threadsPerBlock = dim3(min(cols, 32), min(rows, 32));
 	blocks = dim3(ceil(cols / (float)threadsPerBlock.x), ceil(rows / (float)threadsPerBlock.y));
 
-	printf("Creating (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+	printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_input, d_yuv_data, d_output, scaleFactor);
-    std::cout << cudaGetLastError() << std::endl;
+	std::cout << cudaGetLastError() << std::endl;
 
 	err = cudaDeviceSynchronize();
 
-    if (err != cudaSuccess){
-        printf("Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
-        exit(EXIT_FAILURE);
-    }
+	if (err != cudaSuccess){
+		printf("Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
+		exit(EXIT_FAILURE);
+	}
 
 }
 
@@ -103,10 +102,14 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 }
 
 int main(int argc, char const *argv[]) {
-	// TODO check number of parameters
+	if (argc < 4) {
+		std::cout << "USAGE - " << argv[0] << ": scaleFactor inputFile outputFile" << std::endl;
+		return 0;
+	}
+
+	int scaleFactor = atoi(argv[1]);
 	std::string input_path = argv[2];
 	std::string output_path = argv[3];
-	int scaleFactor = atoi(argv[1]);
 	
 	// expand_video(input_path, output_path, scaleFactor);
 	expand_image(input_path, output_path, scaleFactor);
