@@ -19,8 +19,8 @@ __global__ void expand_pixel_kernel(unsigned int rows, unsigned int cols, PixelR
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, PixelYUV *d_yuv_data, PixelRGB *d_output, unsigned int scaleFactor) {
 	dim3 threadsPerBlock = dim3(min(1024, rows * cols));
 	dim3 blocks = dim3(ceil(rows * cols / (float)threadsPerBlock.x));
-	
-	printf("rgb_to_yuv_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+
+	// printf("rgb_to_yuv_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	rgb_to_yuv_kernel<<<blocks, threadsPerBlock>>>(rows * cols, d_input, d_yuv_data);
 	cudaError_t err = cudaDeviceSynchronize();
 
@@ -32,9 +32,9 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
 	threadsPerBlock = dim3(min(cols, 32), min(rows, 32));
 	blocks = dim3(ceil(cols / (float)threadsPerBlock.x), ceil(rows / (float)threadsPerBlock.y));
 
-	printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+	// printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_input, d_yuv_data, d_output, scaleFactor);
-	std::cout << cudaGetLastError() << std::endl;
+	// std::cout << cudaGetLastError() << std::endl;
 
 	err = cudaDeviceSynchronize();
 
@@ -83,6 +83,14 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 	PixelRGB *output = (PixelRGB *) malloc(frame_heigth * frame_width * scaleFactor * scaleFactor * sizeof (PixelRGB));
 	cv::VideoWriter out_video(output_path, fourcc, fps, cv::Size(frame_width * scaleFactor, frame_heigth * scaleFactor));
 
+	// allocate memory on device
+	PixelRGB *d_rgb_data, *d_output;
+	PixelYUV *d_yuv_data;
+	cudaMalloc((void**)&d_rgb_data, (frame_heigth * frame_width) * sizeof(PixelRGB));
+	cudaMalloc((void**)&d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB));
+	cudaMalloc((void**)&d_yuv_data, (frame_heigth * frame_width) * sizeof(PixelYUV));
+
+	// process frames
 	cv::Mat frame;
 	while (1) {
 		video >> frame;
@@ -90,11 +98,16 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 			break;
 		rgb_data = (PixelRGB *) frame.data;
 
-		// TODO
-		// expand_frame(frame_heigth, frame_width, rgb_data, output, scaleFactor);
+		// copy data to device
+		cudaMemcpy(d_rgb_data, rgb_data, (frame_heigth * frame_width) * sizeof(PixelRGB), cudaMemcpyHostToDevice);
 
+		expand_frame(frame_heigth, frame_width, d_rgb_data, d_yuv_data, d_output, scaleFactor);
+
+		// copy data from device
+		cudaMemcpy(output, d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
+
+		// save frame to video
 		cv::Mat frame_out = cv::Mat(frame_heigth * scaleFactor, frame_width * scaleFactor, CV_8UC3, (uchar*) output);
-		
 		out_video << frame_out;
 	}
 	video.release();
@@ -102,17 +115,26 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 }
 
 int main(int argc, char const *argv[]) {
-	if (argc < 4) {
-		std::cout << "USAGE - " << argv[0] << ": scaleFactor inputFile outputFile" << std::endl;
+	if (argc < 5) {
+		std::cout << "USAGE - " << argv[0] << ": scaleFactor type inputFile outputFile" << std::endl;
+		std::cout << "TYPES: (i)mage, (v)ideo" << std::endl;
 		return 0;
 	}
 
 	int scaleFactor = atoi(argv[1]);
-	std::string input_path = argv[2];
-	std::string output_path = argv[3];
+	std::string type = argv[2];
+	std::string input_path = argv[3];
+	std::string output_path = argv[4];
 	
-	// expand_video(input_path, output_path, scaleFactor);
-	expand_image(input_path, output_path, scaleFactor);
+	if (type == "i" || type == "image") {
+		expand_image(input_path, output_path, scaleFactor);
+		return 0;
+	} else if (type == "v" || type == "video") {
+		expand_video(input_path, output_path, scaleFactor);
+		return 0;
+	}
 
-	return 0;
+	std::cerr << "Type not recognized" << std::endl;
+
+	return 1;
 }
