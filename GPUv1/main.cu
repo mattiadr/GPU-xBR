@@ -39,7 +39,7 @@ __global__ void expand_pixel_kernel(unsigned int rows, unsigned int cols, PixelR
 		return;
 	}
 
-	expand_pixel_tiling(cols, TILE_DIM, sh_inputRGB, sh_inputYUV, output, scaleFactor, t_row + OFFSET, t_col + OFFSET, o_row, o_col);
+	expand_pixel_tiling(cols, BLOCK_DIM, sh_inputRGB, sh_inputYUV, output, scaleFactor, t_row + OFFSET, t_col + OFFSET, o_row, o_col);
 }
 
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, PixelYUV *d_yuv_data, PixelRGB *d_output, unsigned int scaleFactor) {
@@ -55,7 +55,7 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
 		exit(EXIT_FAILURE);
 	}
 
-	threadsPerBlock = dim3(min(cols, BLOCK_DIM), min(rows, BLOCK_DIM));
+	threadsPerBlock = dim3(BLOCK_DIM, BLOCK_DIM);
 	blocks = dim3(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
 
 	printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
