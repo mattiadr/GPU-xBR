@@ -56,10 +56,10 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
 	}
 
 	threadsPerBlock = dim3(min(cols, BLOCK_DIM), min(rows, BLOCK_DIM));
-	blocks = dim3(ceil(cols / TILE_DIM), ceil(rows / TILE_DIM));
+	blocks = dim3(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
 
-	// printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
-	expand_pixel_kernel<<<blocks, threadsPerBlock, 10000>>>(rows, cols, d_input, d_yuv_data, d_output, scaleFactor);
+	printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_input, d_yuv_data, d_output, scaleFactor);
 	// std::cout << cudaGetLastError() << std::endl;
 
 	err = cudaDeviceSynchronize();

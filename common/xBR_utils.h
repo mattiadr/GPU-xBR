@@ -188,28 +188,28 @@ __device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, Pi
 	int edgeTR;
 
 	// edge detection
-	PixelYUV A = inputYUV[t_row-1 * tileCols + t_col-1];
-	PixelYUV B = inputYUV[t_row-1 * tileCols + t_col];
-	PixelYUV C = inputYUV[t_row-1 * tileCols + t_col+1];
-	PixelYUV D = inputYUV[t_row * tileCols + t_col-1];
+	PixelYUV A = inputYUV[(t_row-1) * tileCols + (t_col-1)];
+	PixelYUV B = inputYUV[(t_row-1) * tileCols + t_col];
+	PixelYUV C = inputYUV[(t_row-1) * tileCols + (t_col+1)];
+	PixelYUV D = inputYUV[t_row * tileCols + (t_col-1)];
 	PixelYUV E = inputYUV[t_row * tileCols + t_col];
-	PixelYUV F = inputYUV[t_row * tileCols + t_col+1];
-	PixelYUV G = inputYUV[t_row+1 * tileCols + t_col-1];
-	PixelYUV H = inputYUV[t_row+1 * tileCols + t_col];
-	PixelYUV I = inputYUV[t_row+1 * tileCols + t_col+1];
+	PixelYUV F = inputYUV[t_row * tileCols + (t_col+1)];
+	PixelYUV G = inputYUV[(t_row+1) * tileCols + (t_col-1)];
+	PixelYUV H = inputYUV[(t_row+1) * tileCols + t_col];
+	PixelYUV I = inputYUV[(t_row+1) * tileCols + (t_col+1)];
 
-	PixelYUV A1 = inputYUV[t_row-2 * tileCols + t_col-1];
-	PixelYUV B1 = inputYUV[t_row-2 * tileCols + t_col];
-	PixelYUV C1 = inputYUV[t_row-2 * tileCols + t_col+1];
-	PixelYUV A0 = inputYUV[t_row-1 * tileCols + t_col-2];
-	PixelYUV C4 = inputYUV[t_row-1 * tileCols + t_col+2];
-	PixelYUV D0 = inputYUV[t_row * tileCols + t_col-2];
-	PixelYUV F4 = inputYUV[t_row * tileCols + t_col+2];
-	PixelYUV G0 = inputYUV[t_row+1 * tileCols + t_col-2];
-	PixelYUV I4 = inputYUV[t_row+1 * tileCols + t_col+2];
-	PixelYUV G5 = inputYUV[t_row+2 * tileCols + t_col-1];
-	PixelYUV H5 = inputYUV[t_row+2 * tileCols + t_col];
-	PixelYUV I5 = inputYUV[t_row+2 * tileCols + t_col+1];
+	PixelYUV A1 = inputYUV[(t_row-2) * tileCols + (t_col-1)];
+	PixelYUV B1 = inputYUV[(t_row-2) * tileCols + t_col];
+	PixelYUV C1 = inputYUV[(t_row-2) * tileCols + (t_col+1)];
+	PixelYUV A0 = inputYUV[(t_row-1) * tileCols + (t_col-2)];
+	PixelYUV C4 = inputYUV[(t_row-1) * tileCols + (t_col+2)];
+	PixelYUV D0 = inputYUV[t_row * tileCols + (t_col-2)];
+	PixelYUV F4 = inputYUV[t_row * tileCols + (t_col+2)];
+	PixelYUV G0 = inputYUV[(t_row+1) * tileCols + (t_col-2)];
+	PixelYUV I4 = inputYUV[(t_row+1) * tileCols + (t_col+2)];
+	PixelYUV G5 = inputYUV[(t_row+2) * tileCols + (t_col-1)];
+	PixelYUV H5 = inputYUV[(t_row+2) * tileCols + t_col];
+	PixelYUV I5 = inputYUV[(t_row+2) * tileCols + (t_col+1)];
 
 	unsigned int wdBRO = d(C, E) + d(E, G) + d(F4, I) + d(I, H5) + 4*d(F, H);
 	unsigned int wdBRP = d(B, F) + d(F, I4) + d(D, H) + d(H, I5) + 4*d(E, I);
@@ -240,8 +240,8 @@ __device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, Pi
 	}
 
 	if (edgeBR) {
-		PixelRGB F_rgb = inputRGB[t_row * tileCols + t_col+1];
-		PixelRGB H_rgb = inputRGB[t_row+1 * tileCols + t_col];
+		PixelRGB F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
+		PixelRGB H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
 		PixelRGB newColor = d(E, F) <= d(E, H) ? F_rgb : H_rgb;
 
 		if (YUV_equals(F, G) && YUV_equals(C, H)) {
@@ -256,8 +256,8 @@ __device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, Pi
 	}
 
 	if (edgeBL) {
-		PixelRGB D_rgb = inputRGB[t_row * tileCols + t_col-1];
-		PixelRGB H_rgb = inputRGB[t_row+1 * tileCols + t_col];
+		PixelRGB D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
+		PixelRGB H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
 		PixelRGB newColor = d(D, E) <= d(E, H) ? D_rgb : H_rgb;
 
 		if (YUV_equals(D, I) && YUV_equals(A, H)) {
@@ -272,8 +272,8 @@ __device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, Pi
 	}
 
 	if (edgeTL) {
-		PixelRGB B_rgb = inputRGB[t_row-1 * tileCols + t_col];
-		PixelRGB D_rgb = inputRGB[t_row * tileCols + t_col-1];
+		PixelRGB B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
+		PixelRGB D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
 		PixelRGB newColor = d(B, E) <= d(D, E) ? B_rgb : D_rgb;
 
 		if (YUV_equals(C, D) && YUV_equals(B, G)) {
@@ -288,8 +288,8 @@ __device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, Pi
 	}
 
 	if (edgeTR) {
-		PixelRGB B_rgb = inputRGB[t_row-1 * tileCols + t_col];
-		PixelRGB F_rgb = inputRGB[t_row * tileCols + t_col+1];
+		PixelRGB B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
+		PixelRGB F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
 		PixelRGB newColor = d(B, E) <= d(E, F) ? B_rgb : F_rgb;
 
 		if (YUV_equals(A, F) && YUV_equals(B, I)) {
