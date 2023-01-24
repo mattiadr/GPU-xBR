@@ -3,8 +3,8 @@
 #include <iostream>
 #include <cmath>
 
-#include "../common/img_utils.h"
-#include "../common/xBR_utils.h"
+#include "img_utils.h"
+#include "xBR_utils.h"
 
 #define BLOCK_DIM 32
 #define TILE_DIM 28

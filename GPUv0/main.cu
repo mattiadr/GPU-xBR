@@ -2,8 +2,8 @@
 #include <opencv2/videoio.hpp>
 #include <iostream>
 
-#include "../common/img_utils.h"
-#include "../common/xBR_utils.h"
+#include "img_utils.h"
+#include "xBR_utils.h"
 
 
 __global__ void expand_pixel_kernel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, unsigned int scaleFactor) {

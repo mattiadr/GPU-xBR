@@ -2,8 +2,8 @@
 #include <opencv2/videoio.hpp>
 #include <iostream>
 
-#include "../common/img_utils.h"
-#include "../common/xBR_utils.h"
+#include "img_utils.h"
+#include "xBR_utils.h"
 
 
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *input, PixelRGB *output, unsigned int scaleFactor) {
@@ -62,12 +62,26 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 }
 
 int main(int argc, char const *argv[]) {
-	std::string input_path = argv[2];
-	std::string output_path = argv[3];
+	if (argc < 5) {
+		std::cout << "USAGE - " << argv[0] << ": scaleFactor type inputFile outputFile" << std::endl;
+		std::cout << "TYPES: (i)mage, (v)ideo" << std::endl;
+		return 0;
+	}
+
 	int scaleFactor = atoi(argv[1]);
+	std::string type = argv[2];
+	std::string input_path = argv[3];
+	std::string output_path = argv[4];
 
-	// expand_video(input_path, output_path, scaleFactor);
-	expand_image(input_path, output_path, scaleFactor);
+	if (type == "i" || type == "image") {
+		expand_image(input_path, output_path, scaleFactor);
+		return 0;
+	} else if (type == "v" || type == "video") {
+		expand_video(input_path, output_path, scaleFactor);
+		return 0;
+	}
 
-	return 0;
+	std::cerr << "Type not recognized" << std::endl;
+
+	return 1;
 }
