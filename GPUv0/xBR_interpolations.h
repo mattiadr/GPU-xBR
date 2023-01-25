@@ -14,7 +14,7 @@
  * Common
  **/
 
-__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, double percent) {
+__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, float percent) {
 	PixelRGB ret;
 	ret.R = a.R * (1 - percent) + b.R * percent;
 	ret.G = a.G * (1 - percent) + b.G * percent;

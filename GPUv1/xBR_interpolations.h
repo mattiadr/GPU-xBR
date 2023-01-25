@@ -10,17 +10,33 @@
 #define INT2_s 0.25
 #define INT2_l 0.75
 
+#define USE_HALF 0
+
 /**
  * Common
  **/
 
-__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, double percent) {
+#if USE_HALF
+#include "cuda_fp16.h"
+
+__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, half percent) {
+	PixelRGB ret;
+	ret.R = __half2ushort_rn(__hfma(a.R, __hsub(1, percent), __hmul(b.R, percent)));
+	ret.G = __half2ushort_rn(__hfma(a.G, __hsub(1, percent), __hmul(b.G, percent)));
+	ret.B = __half2ushort_rn(__hfma(a.B, __hsub(1, percent), __hmul(b.B, percent)));
+	ret.A = 255;
+	return ret;
+}
+#else
+__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, float percent) {
 	PixelRGB ret;
 	ret.R = a.R * (1 - percent) + b.R * percent;
 	ret.G = a.G * (1 - percent) + b.G * percent;
 	ret.B = a.B * (1 - percent) + b.B * percent;
+	ret.A = 255;
 	return ret;
 }
+#endif
 
 /**
  * Bottom Right
