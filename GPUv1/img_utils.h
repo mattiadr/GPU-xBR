@@ -1,25 +1,36 @@
 #ifndef IMG_UTILS
 #define IMG_UTILS
 
-typedef struct {
+typedef struct __align__(4) {
 	unsigned char B;
 	unsigned char G;
 	unsigned char R;
+	unsigned char A;
 } PixelRGB;
 
-typedef struct {
+typedef struct __align__(4) {
 	unsigned char Y;
 	unsigned char U;
 	unsigned char V;
+	unsigned char A;
 } PixelYUV;
 
-__global__ void rgb_to_yuv_kernel(unsigned int length, PixelRGB *input, PixelYUV *output) {
+__global__ void prepare_data_kernel(unsigned int length, unsigned char *input, PixelRGB *rgb_data, PixelYUV *yuv_data) {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= length)
 		return;
-	output[index].Y =   0.299 * input[index].R + 0.587 * input[index].G + 0.114 * input[index].B;
-	output[index].U = - 0.169 * input[index].R - 0.331 * input[index].G + 0.500 * input[index].B;
-	output[index].V =   0.500 * input[index].R - 0.419 * input[index].G - 0.081 * input[index].B;
+
+	PixelRGB p;
+	p.B = input[index * 3];
+	p.G = input[index * 3 + 1];
+	p.R = input[index * 3 + 2];
+	p.A = 255;
+
+	rgb_data[index] = p;
+
+	yuv_data[index].Y =   0.299 * rgb_data[index].R + 0.587 * rgb_data[index].G + 0.114 * rgb_data[index].B;
+	yuv_data[index].U = - 0.169 * rgb_data[index].R - 0.331 * rgb_data[index].G + 0.500 * rgb_data[index].B;
+	yuv_data[index].V =   0.500 * rgb_data[index].R - 0.419 * rgb_data[index].G - 0.081 * rgb_data[index].B;
 }
 
 #endif
