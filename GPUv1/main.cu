@@ -58,7 +58,7 @@ void expand_frame(unsigned int rows, unsigned int cols, unsigned char *d_raw_dat
 	threadsPerBlock = dim3(BLOCK_DIM, BLOCK_DIM);
 	blocks = dim3(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
 
-	printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
+	// printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_rgb_data, d_yuv_data, d_output, scaleFactor);
 	// std::cout << cudaGetLastError() << std::endl;
 

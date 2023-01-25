@@ -5,17 +5,8 @@
 #include "xBR_interpolations.h"
 
 
-#define ABS(x) tmp = x >> 15; x ^= tmp; x += tmp & 1;
-
-__device__ unsigned int d(PixelYUV a, PixelYUV b) {
-	uint16_t tmp;
-	int16_t y = a.Y - b.Y;
-	ABS(y);
-	int16_t u = a.U - b.U;
-	ABS(u);
-	int16_t v = a.V - b.V;
-	ABS(v);
-	return 48 * y + 7 * u + 6 * v;
+__device__ unsigned int d(const PixelYUV a, const PixelYUV b) {
+	return 48 * abs(a.Y - b.Y) + 7 * abs(a.U - b.U) + 6 * abs(a.V - b.V);
 }
 
 __device__ int YUV_equals(PixelYUV a, PixelYUV b) {
