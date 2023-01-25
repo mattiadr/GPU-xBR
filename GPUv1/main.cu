@@ -28,9 +28,41 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 	if (i_row >= 0 && i_row < rows && i_col >= 0 && i_col < cols) {
 		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + i_col];
 		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + i_col];
+	} else if (i_row < 0 && i_col < 0) {
+		// top left corner
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + 0];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + 0];
+	} else if (i_row < 0 && i_col >= cols) {
+		// top right corner
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + (cols - 1)];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + (cols - 1)];
+	} else if (i_row >= rows && i_col < 0) {
+		// bottom left corner
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + 0];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + 0];
+	} else if (i_row >= rows && i_col >= cols) {
+		// bottom right corner
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + (cols - 1)];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + (cols - 1)];
+	} else if (i_row < 0) {
+		// top edge
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + i_col];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + i_col];
+	} else if (i_row >= rows) {
+		// bottom edge
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + i_col];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + i_col];
+	} else if (i_col < 0) {
+		// left edge
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + 0];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + 0];
+	} else if (i_col >= cols) {
+		// right edge
+		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + (cols - 1)];
+		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + (cols - 1)];
 	} else {
-		sh_inputRGB[t_row * blockDim.x + t_col] = { 0, 0, 0 }; // TODO fix this
-		sh_inputYUV[t_row * blockDim.x + t_col] = { 0, 0, 0 };
+		// this should never happen
+		assert(false);
 	}
 
 	__syncthreads();

@@ -14,16 +14,72 @@ int YUV_equals(PixelYUV a, PixelYUV b) {
 	return d(a, b) < 800;
 }
 
-PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, unsigned int row, unsigned int col) {
-	if (row >= rows) return { 0, 0, 0 }; // TODO fix this
-	if (col >= cols) return { 0, 0, 0 };
-	return input[row * cols + col];
+PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, int row, int col) {
+	if (row >= 0 && row < rows && col >= 0 && col < cols) {
+		return input[row * cols + col];
+	} else if (row < 0 && col < 0) {
+		// top left corner
+		return input[0 * cols + 0];
+	} else if (row < 0 && col >= cols) {
+		// top right corner
+		return input[0 * cols + (cols - 1)];
+	} else if (row >= rows && col < 0) {
+		// bottom left corner
+		return input[(rows - 1) * cols + 0];
+	} else if (row >= rows && col >= cols) {
+		// bottom right corner
+		return input[(rows - 1) * cols + (cols - 1)];
+	} else if (row < 0) {
+		// top edge
+		return input[0 * cols + col];
+	} else if (row >= rows) {
+		// bottom edge
+		return input[(rows - 1) * cols + col];
+	} else if (col < 0) {
+		// left edge
+		return input[row * cols + 0];
+	} else if (col >= cols) {
+		// right edge
+		return input[row * cols + (cols - 1)];
+	} else {
+		// this should never happen
+		assert(false);
+		return {0, 0, 0};
+	}
 }
 
-PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, unsigned int row, unsigned int col) {
-	if (row >= rows) return { 0, 0, 0 };
-	if (col >= cols) return { 0, 0, 0 };
-	return input[row * cols + col];
+PixelRGB get_RGB(unsigned int rows, unsigned int cols, PixelRGB *input, int row, int col) {
+	if (row >= 0 && row < rows && col >= 0 && col < cols) {
+		return input[row * cols + col];
+	} else if (row < 0 && col < 0) {
+		// top left corner
+		return input[0 * cols + 0];
+	} else if (row < 0 && col >= cols) {
+		// top right corner
+		return input[0 * cols + (cols - 1)];
+	} else if (row >= rows && col < 0) {
+		// bottom left corner
+		return input[(rows - 1) * cols + 0];
+	} else if (row >= rows && col >= cols) {
+		// bottom right corner
+		return input[(rows - 1) * cols + (cols - 1)];
+	} else if (row < 0) {
+		// top edge
+		return input[0 * cols + col];
+	} else if (row >= rows) {
+		// bottom edge
+		return input[(rows - 1) * cols + col];
+	} else if (col < 0) {
+		// left edge
+		return input[row * cols + 0];
+	} else if (col >= cols) {
+		// right edge
+		return input[row * cols + (cols - 1)];
+	} else {
+		// this should never happen
+		assert(false);
+		return {0, 0, 0};
+	}
 }
 
 /**
