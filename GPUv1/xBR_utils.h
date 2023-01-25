@@ -7,7 +7,7 @@
 
 #define ABS(x) tmp = x >> 15; x ^= tmp; x += tmp & 1;
 
-__device__ unsigned int d(PixelYUV a, PixelYUV b) {
+__device__ unsigned int d(const PixelYUV a, const PixelYUV b) {
 	uint16_t tmp;
 	int16_t y = a.Y - b.Y;
 	ABS(y);
@@ -18,7 +18,7 @@ __device__ unsigned int d(PixelYUV a, PixelYUV b) {
 	return 48 * y + 7 * u + 6 * v;
 }
 
-__device__ int YUV_equals(PixelYUV a, PixelYUV b) {
+__device__ int YUV_equals(const PixelYUV a, const PixelYUV b) {
 	// TODO ??
 	return d(a, b) < 800;
 }
@@ -45,11 +45,11 @@ __device__ int YUV_equals(PixelYUV a, PixelYUV b) {
  *
  * ex: wdBRO = weighted distance, bottom right direction, orthogonal
  **/
-__device__ void expand_pixel_tiling(unsigned int cols, unsigned int tileCols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, unsigned int scaleFactor, unsigned int t_row, unsigned int t_col, unsigned int o_row, unsigned int o_col) {
-	int edgeBR;
-	int edgeBL;
-	int edgeTL;
-	int edgeTR;
+__device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int tileCols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, const unsigned int scaleFactor, const unsigned int t_row, const unsigned int t_col, const unsigned int o_row, const unsigned int o_col) {
+	bool edgeBR;
+	bool edgeBL;
+	bool edgeTL;
+	bool edgeTR;
 
 	// edge detection
 	PixelYUV A = inputYUV[(t_row-1) * tileCols + (t_col-1)];

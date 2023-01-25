@@ -10,15 +10,15 @@
 #define TILE_DIM 28
 #define OFFSET 2
 
-__global__ void expand_pixel_kernel(unsigned int rows, unsigned int cols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, unsigned int scaleFactor) {
-	int t_row = threadIdx.y;
-	int t_col = threadIdx.x;
+__global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int cols, const PixelRGB *inputRGB, const PixelYUV *inputYUV, PixelRGB *output, const unsigned int scaleFactor) {
+	const int t_row = threadIdx.y;
+	const int t_col = threadIdx.x;
 
-	int o_row = blockIdx.y * TILE_DIM + t_row;
-	int o_col = blockIdx.x * TILE_DIM + t_col;
+	const int o_row = blockIdx.y * TILE_DIM + t_row;
+	const int o_col = blockIdx.x * TILE_DIM + t_col;
 
-	int i_row = o_row - OFFSET;
-	int i_col = o_col - OFFSET;
+	const int i_row = o_row - OFFSET;
+	const int i_col = o_col - OFFSET;
 
 	// declare shared memory
 	__shared__ PixelRGB sh_inputRGB[BLOCK_DIM * BLOCK_DIM];

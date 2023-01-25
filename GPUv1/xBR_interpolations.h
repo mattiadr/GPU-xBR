@@ -14,7 +14,7 @@
  * Common
  **/
 
-__device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, double percent) {
+__device__ PixelRGB mix_colors(const PixelRGB a, const PixelRGB b, const float percent) {
 	PixelRGB ret;
 	ret.R = a.R * (1 - percent) + b.R * percent;
 	ret.G = a.G * (1 - percent) + b.G * percent;
@@ -26,7 +26,7 @@ __device__ PixelRGB mix_colors(PixelRGB a, PixelRGB b, double percent) {
  * Bottom Right
  **/
 
-__device__ void BR_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BR_INT1(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT1_even);
@@ -46,7 +46,7 @@ __device__ void BR_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int ou
 	}
 }
 
-__device__ void BR_INT2_B(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BR_INT2_B(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_s);
@@ -71,7 +71,7 @@ __device__ void BR_INT2_B(unsigned int scaleFactor, PixelRGB *out, unsigned int 
 	}
 }
 
-__device__ void BR_INT2_R(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BR_INT2_R(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_s);
@@ -100,7 +100,7 @@ __device__ void BR_INT2_R(unsigned int scaleFactor, PixelRGB *out, unsigned int 
  * Bottom Left
  **/
 
-__device__ void BL_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BL_INT1(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT1_even);
@@ -120,7 +120,7 @@ __device__ void BL_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int ou
 	}
 }
 
-__device__ void BL_INT2_B(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BL_INT2_B(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_l);
@@ -145,7 +145,7 @@ __device__ void BL_INT2_B(unsigned int scaleFactor, PixelRGB *out, unsigned int 
 	}
 }
 
-__device__ void BL_INT2_L(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void BL_INT2_L(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
@@ -174,7 +174,7 @@ __device__ void BL_INT2_L(unsigned int scaleFactor, PixelRGB *out, unsigned int 
  * Top Left
  **/
 
-__device__ void TL_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TL_INT1(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT1_even);
@@ -194,7 +194,7 @@ __device__ void TL_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int ou
 	}
 }
 
-__device__ void TL_INT2_T(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TL_INT2_T(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_l);
@@ -219,7 +219,7 @@ __device__ void TL_INT2_T(unsigned int scaleFactor, PixelRGB *out, unsigned int 
 	}
 }
 
-__device__ void TL_INT2_L(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TL_INT2_L(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_l);
@@ -248,7 +248,7 @@ __device__ void TL_INT2_L(unsigned int scaleFactor, PixelRGB *out, unsigned int 
  * Top Right
  **/
 
-__device__ void TR_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TR_INT1(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT1_even);
@@ -268,7 +268,7 @@ __device__ void TR_INT1(unsigned int scaleFactor, PixelRGB *out, unsigned int ou
 	}
 }
 
-__device__ void TR_INT2_T(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TR_INT2_T(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
@@ -293,7 +293,7 @@ __device__ void TR_INT2_T(unsigned int scaleFactor, PixelRGB *out, unsigned int 
 	}
 }
 
-__device__ void TR_INT2_R(unsigned int scaleFactor, PixelRGB *out, unsigned int out_cols, PixelRGB newColor) {
+__device__ void TR_INT2_R(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
 		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_l);
