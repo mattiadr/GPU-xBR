@@ -24,7 +24,6 @@ __device__ PixelRGB mix_colors(const PixelRGB a, const PixelRGB b, const half pe
 	ret.R = __half2ushort_rn(__hfma(a.R, __hsub(1, percent), __hmul(b.R, percent)));
 	ret.G = __half2ushort_rn(__hfma(a.G, __hsub(1, percent), __hmul(b.G, percent)));
 	ret.B = __half2ushort_rn(__hfma(a.B, __hsub(1, percent), __hmul(b.B, percent)));
-	ret.A = 255;
 	return ret;
 }
 #else
@@ -33,7 +32,6 @@ __device__ PixelRGB mix_colors(const PixelRGB a, const PixelRGB b, const float p
 	ret.R = a.R * (1 - percent) + b.R * percent;
 	ret.G = a.G * (1 - percent) + b.G * percent;
 	ret.B = a.B * (1 - percent) + b.B * percent;
-	ret.A = 255;
 	return ret;
 }
 #endif

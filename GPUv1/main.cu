@@ -10,7 +10,7 @@
 #define TILE_DIM 28
 #define OFFSET 2
 
-__global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int cols, const PixelRGB *inputRGB, const PixelYUV *inputYUV, PixelRGB *output, const unsigned int scaleFactor) {
+__global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int cols, const PixelRGB *input, PixelRGB *output, const unsigned int scaleFactor) {
 	const int t_row = threadIdx.y;
 	const int t_col = threadIdx.x;
 
@@ -25,45 +25,42 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 	__shared__ PixelYUV sh_inputYUV[BLOCK_DIM * BLOCK_DIM];
 
 	// copy data in shared memory
+	PixelRGB p;
 	if (i_row >= 0 && i_row < rows && i_col >= 0 && i_col < cols) {
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + i_col];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + i_col];
+		p = input[i_row * cols + i_col];
 	} else if (i_row < 0 && i_col < 0) {
 		// top left corner
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + 0];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + 0];
+		p = input[0 * cols + 0];
 	} else if (i_row < 0 && i_col >= cols) {
 		// top right corner
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + (cols - 1)];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + (cols - 1)];
+		p = input[0 * cols + (cols - 1)];
 	} else if (i_row >= rows && i_col < 0) {
 		// bottom left corner
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + 0];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + 0];
+		p = input[(rows - 1) * cols + 0];
 	} else if (i_row >= rows && i_col >= cols) {
 		// bottom right corner
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + (cols - 1)];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + (cols - 1)];
+		p = input[(rows - 1) * cols + (cols - 1)];
 	} else if (i_row < 0) {
 		// top edge
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[0 * cols + i_col];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[0 * cols + i_col];
+		p = input[0 * cols + i_col];
 	} else if (i_row >= rows) {
 		// bottom edge
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[(rows - 1) * cols + i_col];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[(rows - 1) * cols + i_col];
+		p = input[(rows - 1) * cols + i_col];
 	} else if (i_col < 0) {
 		// left edge
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + 0];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + 0];
+		p = input[i_row * cols + 0];
 	} else if (i_col >= cols) {
 		// right edge
-		sh_inputRGB[t_row * blockDim.x + t_col] = inputRGB[i_row * cols + (cols - 1)];
-		sh_inputYUV[t_row * blockDim.x + t_col] = inputYUV[i_row * cols + (cols - 1)];
+		p = input[i_row * cols + (cols - 1)];
 	} else {
 		// this should never happen
 		assert(false);
 	}
+
+	__syncthreads();
+
+	sh_inputRGB[t_row * blockDim.x + t_col] = p;
+	sh_inputYUV[t_row * blockDim.x + t_col] = rgb_to_yuv(p);
 
 	__syncthreads();
 
@@ -74,12 +71,13 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 	expand_pixel_tiling(cols, BLOCK_DIM, sh_inputRGB, sh_inputYUV, output, scaleFactor, t_row + OFFSET, t_col + OFFSET, o_row, o_col);
 }
 
-void expand_frame(unsigned int rows, unsigned int cols, unsigned char *d_raw_data, PixelRGB *d_rgb_data, PixelYUV *d_yuv_data, PixelRGB *d_output, unsigned int scaleFactor) {
-	dim3 threadsPerBlock = dim3(min(1024, rows * cols));
-	dim3 blocks = dim3(ceil(rows * cols / (float)threadsPerBlock.x));
+void expand_frame(unsigned int rows, unsigned int cols, PixelRGB3 *d_input_3, PixelRGB3 *d_output_3, PixelRGB *d_input, PixelRGB *d_output, unsigned int scaleFactor) {
+	// convert frame from 3 to 4 channels
+	dim3 threadsPerBlock_convert(min(1024, rows * cols));
+	dim3 blocks_convert(ceil(rows * cols / (float) threadsPerBlock_convert.x));
 
-	// printf("prepare_data_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
-	prepare_data_kernel<<<blocks, threadsPerBlock>>>(rows * cols, d_raw_data, d_rgb_data, d_yuv_data);
+	rgb3_to_rgb_kernel<<<blocks_convert, threadsPerBlock_convert>>>(rows * cols, d_input_3, d_input);
+
 	cudaError_t err = cudaDeviceSynchronize();
 
 	if (err != cudaSuccess){
@@ -87,12 +85,11 @@ void expand_frame(unsigned int rows, unsigned int cols, unsigned char *d_raw_dat
 		exit(EXIT_FAILURE);
 	}
 
-	threadsPerBlock = dim3(BLOCK_DIM, BLOCK_DIM);
-	blocks = dim3(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
+	// expand pixels
+	dim3 threadsPerBlock_expand(BLOCK_DIM, BLOCK_DIM);
+	dim3 blocks_expand(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
 
-	// printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
-	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_rgb_data, d_yuv_data, d_output, scaleFactor);
-	// std::cout << cudaGetLastError() << std::endl;
+	expand_pixel_kernel<<<blocks_expand, threadsPerBlock_expand>>>(rows, cols, d_input, d_output, scaleFactor);
 
 	err = cudaDeviceSynchronize();
 
@@ -101,28 +98,41 @@ void expand_frame(unsigned int rows, unsigned int cols, unsigned char *d_raw_dat
 		exit(EXIT_FAILURE);
 	}
 
+	// convert frame from 4 to 3 channels
+	blocks_convert.x *= scaleFactor * scaleFactor;
+	rgb_to_rgb3_kernel<<<blocks_convert, threadsPerBlock_convert>>>(rows * cols * scaleFactor * scaleFactor, d_output, d_output_3);
+
+	err = cudaDeviceSynchronize();
+
+	if (err != cudaSuccess){
+		printf("Failed to launch kernel (error code %d) %s!\n", cudaGetLastError(), cudaGetErrorString(err));
+		exit(EXIT_FAILURE);
+	}
 }
 
 void expand_image(std::string input_path, std::string output_path, unsigned int scaleFactor) {
 	cv::Mat img = cv::imread(input_path, cv::IMREAD_COLOR);
-	PixelRGB *output = (PixelRGB *) malloc(img.rows * img.cols * scaleFactor * scaleFactor * sizeof (PixelRGB));
 
-	unsigned char *d_raw_data;
-	PixelRGB *d_rgb_data, *d_output;
-	PixelYUV *d_yuv_data;
+	PixelRGB3 *output = (PixelRGB3 *) malloc(img.rows * img.cols * scaleFactor * scaleFactor * sizeof (PixelRGB3));
 
-	cudaMalloc((void **) &d_raw_data, (img.rows * img.cols) * 3 * sizeof(unsigned char));
-	cudaMalloc((void **) &d_rgb_data, (img.rows * img.cols) * sizeof(PixelRGB));
+	// allocate memory on device
+	PixelRGB3 *d_input_3, *d_output_3;
+	PixelRGB *d_input, *d_output;
+
+	cudaMalloc((void **) &d_input_3, (img.rows * img.cols) * sizeof(PixelRGB3));
+	cudaMalloc((void **) &d_output_3, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB3));
+	cudaMalloc((void **) &d_input, (img.rows * img.cols) * sizeof(PixelRGB));
 	cudaMalloc((void **) &d_output, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB));
-	cudaMalloc((void **) &d_yuv_data, (img.rows * img.cols) * sizeof(PixelYUV));
 
-	cudaMemcpy(d_raw_data, img.data, (img.rows * img.cols) * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
+	// copy data to device
+	cudaMemcpy(d_input_3, img.data, (img.rows * img.cols) * sizeof(PixelRGB3), cudaMemcpyHostToDevice);
 
-	expand_frame(img.rows, img.cols, d_raw_data, d_rgb_data, d_yuv_data, d_output, scaleFactor);
+	expand_frame(img.rows, img.cols, d_input_3, d_output_3, d_input, d_output, scaleFactor);
 
-	cudaMemcpy(output, d_output, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
+	// copy data from device
+	cudaMemcpy(output, d_output_3, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB3), cudaMemcpyDeviceToHost);
 
-	cv::Mat img_out(img.rows * scaleFactor, img.cols * scaleFactor, CV_8UC4, (void *) output);
+	cv::Mat img_out(img.rows * scaleFactor, img.cols * scaleFactor, CV_8UC3, (void *) output);
 	cv::imwrite(output_path, img_out);
 }
 
@@ -143,14 +153,13 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 	cv::VideoWriter out_video(output_path, fourcc, fps, cv::Size(frame_width * scaleFactor, frame_heigth * scaleFactor));
 
 	// allocate memory on device
-	unsigned char *d_raw_data;
-	PixelRGB *d_rgb_data, *d_output;
-	PixelYUV *d_yuv_data;
+	PixelRGB3 *d_input_3, *d_output_3;
+	PixelRGB *d_input, *d_output;
 
-	cudaMalloc((void **) &d_raw_data, (frame_heigth * frame_width) * 3 * sizeof(unsigned char));
-	cudaMalloc((void **) &d_rgb_data, (frame_heigth * frame_width) * sizeof(PixelRGB));
+	cudaMalloc((void **) &d_input_3, (frame_heigth * frame_width) * sizeof(PixelRGB3));
+	cudaMalloc((void **) &d_output_3, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB3));
+	cudaMalloc((void **) &d_input, (frame_heigth * frame_width) * sizeof(PixelRGB));
 	cudaMalloc((void **) &d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB));
-	cudaMalloc((void **) &d_yuv_data, (frame_heigth * frame_width) * sizeof(PixelYUV));
 
 	// process frames
 	cv::Mat frame;
@@ -160,15 +169,16 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 			break;
 
 		// copy data to device
-		cudaMemcpy(d_raw_data, frame.data, (frame_heigth * frame_width) * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_input_3, frame.data, (frame_heigth * frame_width) * sizeof(PixelRGB3), cudaMemcpyHostToDevice);
 
-		expand_frame(frame_heigth, frame_width, d_raw_data, d_rgb_data, d_yuv_data, d_output, scaleFactor);
+		expand_frame(frame_heigth, frame_width, d_input_3, d_output_3, d_input, d_output, scaleFactor);
 
 		// copy data from device
-		cudaMemcpy(output, d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
+		cudaMemcpy(output, d_output_3, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB3), cudaMemcpyDeviceToHost);
+
+		cv::Mat frame_out = cv::Mat(frame_heigth * scaleFactor, frame_width * scaleFactor, CV_8UC3, (void *) output);
 
 		// save frame to video
-		cv::Mat frame_out = cv::Mat(frame_heigth * scaleFactor, frame_width * scaleFactor, CV_8UC4, (uchar*) output);
 		out_video << frame_out;
 	}
 	video.release();
