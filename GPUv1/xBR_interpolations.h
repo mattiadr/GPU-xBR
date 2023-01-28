@@ -9,6 +9,8 @@
 
 #define INT2_s 0.25
 #define INT2_l 0.75
+#define INT2_ss 0.5
+#define INT2_ll 0.8
 
 #define USE_HALF 0
 
@@ -53,6 +55,35 @@ __device__ void BR_INT1(const unsigned int scaleFactor, PixelRGB *out, const uns
 	case 4:
 		out[2 * out_cols + 3] = mix_colors(out[2 * out_cols + 3], newColor, INT1_even);
 		out[3 * out_cols + 2] = mix_colors(out[3 * out_cols + 2], newColor, INT1_even);
+		out[3 * out_cols + 3] = newColor;
+		break;
+	// default:
+		// fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
+	}
+}
+
+__device__ void BR_INT2_BR(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
+	switch (scaleFactor) {
+	case 2:
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_s);
+		out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT2_ll);
+		break;
+	case 3:
+		out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT2_s);
+		out[1 * out_cols + 2] = mix_colors(out[1 * out_cols + 2], newColor, INT2_l);
+		out[2 * out_cols + 0] = mix_colors(out[2 * out_cols + 0], newColor, INT2_s);
+		out[2 * out_cols + 1] = mix_colors(out[2 * out_cols + 1], newColor, INT2_l);
+		out[2 * out_cols + 2] = newColor;
+		break;
+	case 4:
+		out[0 * out_cols + 3] = mix_colors(out[0 * out_cols + 3], newColor, INT2_s);
+		out[1 * out_cols + 3] = mix_colors(out[1 * out_cols + 3], newColor, INT2_l);
+		out[2 * out_cols + 2] = mix_colors(out[2 * out_cols + 2], newColor, INT2_ss);
+		out[2 * out_cols + 3] = newColor;
+		out[3 * out_cols + 0] = mix_colors(out[3 * out_cols + 0], newColor, INT2_s);
+		out[3 * out_cols + 1] = mix_colors(out[3 * out_cols + 1], newColor, INT2_l);
+		out[3 * out_cols + 2] = newColor;
 		out[3 * out_cols + 3] = newColor;
 		break;
 	// default:
@@ -134,6 +165,35 @@ __device__ void BL_INT1(const unsigned int scaleFactor, PixelRGB *out, const uns
 	}
 }
 
+__device__ void BL_INT2_BL(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
+	switch (scaleFactor) {
+	case 2:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_ll);
+		out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT2_s);
+		break;
+	case 3:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_l);
+		out[2 * out_cols + 0] = newColor;
+		out[2 * out_cols + 1] = mix_colors(out[2 * out_cols + 1], newColor, INT2_l);
+		out[2 * out_cols + 2] = mix_colors(out[2 * out_cols + 2], newColor, INT2_s);
+		break;
+	case 4:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_l);
+		out[2 * out_cols + 0] = newColor;
+		out[2 * out_cols + 1] = mix_colors(out[2 * out_cols + 1], newColor, INT2_ss);
+		out[3 * out_cols + 0] = newColor;
+		out[3 * out_cols + 1] = newColor;
+		out[3 * out_cols + 2] = mix_colors(out[3 * out_cols + 2], newColor, INT2_l);
+		out[3 * out_cols + 3] = mix_colors(out[3 * out_cols + 3], newColor, INT2_s);
+		break;
+	// default:
+		// fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
+	}
+}
+
 __device__ void BL_INT2_B(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
@@ -208,6 +268,35 @@ __device__ void TL_INT1(const unsigned int scaleFactor, PixelRGB *out, const uns
 	}
 }
 
+__device__ void TL_INT2_TL(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
+	switch (scaleFactor) {
+	case 2:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_ll);
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_s);
+		break;
+	case 3:
+		out[0 * out_cols + 0] = newColor;
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_l);
+		out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT2_s);
+		out[1 * out_cols + 0] = mix_colors(out[1 * out_cols + 0], newColor, INT2_l);
+		out[2 * out_cols + 0] = mix_colors(out[2 * out_cols + 0], newColor, INT2_s);
+		break;
+	case 4:
+		out[0 * out_cols + 0] = newColor;
+		out[0 * out_cols + 1] = newColor;
+		out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT2_l);
+		out[0 * out_cols + 3] = mix_colors(out[0 * out_cols + 3], newColor, INT2_s);
+		out[1 * out_cols + 0] = newColor;
+		out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT2_ss);
+		out[2 * out_cols + 0] = mix_colors(out[2 * out_cols + 0], newColor, INT2_l);
+		out[3 * out_cols + 0] = mix_colors(out[3 * out_cols + 0], newColor, INT2_s);
+		break;
+	// default:
+		// fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
+	}
+}
+
 __device__ void TL_INT2_T(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
 	switch (scaleFactor) {
 	case 2:
@@ -276,6 +365,35 @@ __device__ void TR_INT1(const unsigned int scaleFactor, PixelRGB *out, const uns
 		out[0 * out_cols + 2] = mix_colors(out[0 * out_cols + 2], newColor, INT1_even);
 		out[1 * out_cols + 3] = mix_colors(out[1 * out_cols + 3], newColor, INT1_even);
 		out[0 * out_cols + 3] = newColor;
+		break;
+	// default:
+		// fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
+	}
+}
+
+__device__ void TR_INT2_TR(const unsigned int scaleFactor, PixelRGB *out, const unsigned int out_cols, const PixelRGB newColor) {
+	switch (scaleFactor) {
+	case 2:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_ll);
+		out[1 * out_cols + 1] = mix_colors(out[1 * out_cols + 1], newColor, INT2_s);
+		break;
+	case 3:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_l);
+		out[0 * out_cols + 2] = newColor;
+		out[1 * out_cols + 2] = mix_colors(out[1 * out_cols + 2], newColor, INT2_l);
+		out[2 * out_cols + 2] = mix_colors(out[2 * out_cols + 2], newColor, INT2_s);
+		break;
+	case 4:
+		out[0 * out_cols + 0] = mix_colors(out[0 * out_cols + 0], newColor, INT2_s);
+		out[0 * out_cols + 1] = mix_colors(out[0 * out_cols + 1], newColor, INT2_l);
+		out[0 * out_cols + 2] = newColor;
+		out[0 * out_cols + 3] = newColor;
+		out[1 * out_cols + 2] = mix_colors(out[1 * out_cols + 2], newColor, INT2_ss);
+		out[1 * out_cols + 3] = newColor;
+		out[2 * out_cols + 3] = mix_colors(out[2 * out_cols + 3], newColor, INT2_l);
+		out[3 * out_cols + 3] = mix_colors(out[3 * out_cols + 3], newColor, INT2_s);
 		break;
 	// default:
 		// fprintf(stderr, "Not implemented error: scaleFactor %d not supported.\n", scaleFactor);
