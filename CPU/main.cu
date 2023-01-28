@@ -1,19 +1,25 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <iostream>
+#include <chrono>
+#include <cfloat>
 
 #include "img_utils.h"
 #include "xBR_utils.h"
 
+std::vector<std::chrono::high_resolution_clock::time_point> time_points;
 
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *input, PixelRGB *output, unsigned int scaleFactor) {
+	time_points.emplace_back(std::chrono::high_resolution_clock::now());
 	PixelYUV *yuv_data = (PixelYUV *) malloc(rows * cols * sizeof (PixelYUV));
 	rgb_to_yuv(rows * cols, input, yuv_data);
+
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 			expand_pixel(rows, cols, input, yuv_data, output, scaleFactor, r, c);
 		}
 	}
+	time_points.emplace_back(std::chrono::high_resolution_clock::now());
 }
 
 void expand_image(std::string input_path, std::string output_path, unsigned int scaleFactor) {
@@ -61,6 +67,22 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 	out_video.release();
 }
 
+void print_time_stats() {
+	double durations[time_points.size() / 2];
+	double total = 0, max = 0, min = DBL_MAX;
+	for (int i = 0; i < time_points.size(); i+=2) {
+		durations[i/2] = std::chrono::duration_cast<std::chrono::duration<double>>(time_points[i + 1] - time_points[i]).count();
+		total += durations[i/2];
+		if (durations[i/2] < min) min = durations[i/2];
+		if (durations[i/2] > max) max = durations[i/2];
+	}
+
+	std::cout << "Frame times (s):" << std::endl;
+	std::cout << "Avg: " << total / (time_points.size() / 2) << std::endl;
+	std::cout << "Max: " << max << std::endl;
+	std::cout << "Min: " << min << std::endl;
+}
+
 int main(int argc, char const *argv[]) {
 	if (argc < 5) {
 		std::cout << "USAGE - " << argv[0] << ": scaleFactor type inputFile outputFile" << std::endl;
@@ -75,9 +97,11 @@ int main(int argc, char const *argv[]) {
 
 	if (type == "i" || type == "image") {
 		expand_image(input_path, output_path, scaleFactor);
+		print_time_stats();
 		return 0;
 	} else if (type == "v" || type == "video") {
 		expand_video(input_path, output_path, scaleFactor);
+		print_time_stats();
 		return 0;
 	}
 
