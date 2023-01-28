@@ -36,7 +36,7 @@ __device__ int YUV_equals(const PixelYUV a, const PixelYUV b) {
  *
  * ex: wdBRO = weighted distance, bottom right direction, orthogonal
  **/
-__device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int tileCols, PixelRGB *inputRGB, PixelYUV *inputYUV, PixelRGB *output, const unsigned int scaleFactor, const unsigned int t_row, const unsigned int t_col, const unsigned int o_row, const unsigned int o_col) {
+__device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int tileCols, PixelRGB4 *inputRGB, PixelYUV *inputYUV, PixelRGB *output, const unsigned int scaleFactor, const unsigned int t_row, const unsigned int t_col, const unsigned int o_row, const unsigned int o_col) {
 	bool edgeBR;
 	bool edgeBL;
 	bool edgeTL;
@@ -87,7 +87,7 @@ __device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int 
 	unsigned int out_cols = cols * scaleFactor;
 	PixelRGB *out = &output[o_row * out_cols * scaleFactor + o_col * scaleFactor];
 
-	PixelRGB E_rgb = inputRGB[t_row * tileCols + t_col];
+	PixelRGB E_rgb = rgb4_to_rgb(inputRGB[t_row * tileCols + t_col]);
 	for (int r = 0; r < scaleFactor; r++) {
 		for (int c = 0; c < scaleFactor; c++) {
 			out[r * out_cols + c] = E_rgb;
@@ -95,9 +95,9 @@ __device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int 
 	}
 
 	if (edgeBR) {
-		PixelRGB F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
-		PixelRGB H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
-		PixelRGB newColor = d(E, F) <= d(E, H) ? F_rgb : H_rgb;
+		PixelRGB4 F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
+		PixelRGB4 H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
+		PixelRGB newColor = rgb4_to_rgb(d(E, F) <= d(E, H) ? F_rgb : H_rgb);
 
 		if (YUV_equals(F, G) && YUV_equals(C, H)) {
 			BR_INT2_B(scaleFactor, out, out_cols, newColor);
@@ -111,9 +111,9 @@ __device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int 
 	}
 
 	if (edgeBL) {
-		PixelRGB D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
-		PixelRGB H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
-		PixelRGB newColor = d(D, E) <= d(E, H) ? D_rgb : H_rgb;
+		PixelRGB4 D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
+		PixelRGB4 H_rgb = inputRGB[(t_row+1) * tileCols + t_col];
+		PixelRGB newColor = rgb4_to_rgb(d(D, E) <= d(E, H) ? D_rgb : H_rgb);
 
 		if (YUV_equals(D, I) && YUV_equals(A, H)) {
 			BL_INT2_B(scaleFactor, out, out_cols, newColor);
@@ -127,9 +127,9 @@ __device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int 
 	}
 
 	if (edgeTL) {
-		PixelRGB B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
-		PixelRGB D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
-		PixelRGB newColor = d(B, E) <= d(D, E) ? B_rgb : D_rgb;
+		PixelRGB4 B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
+		PixelRGB4 D_rgb = inputRGB[t_row * tileCols + (t_col-1)];
+		PixelRGB newColor = rgb4_to_rgb(d(B, E) <= d(D, E) ? B_rgb : D_rgb);
 
 		if (YUV_equals(C, D) && YUV_equals(B, G)) {
 			TL_INT2_T(scaleFactor, out, out_cols, newColor);
@@ -143,9 +143,9 @@ __device__ void expand_pixel_tiling(const unsigned int cols, const unsigned int 
 	}
 
 	if (edgeTR) {
-		PixelRGB B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
-		PixelRGB F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
-		PixelRGB newColor = d(B, E) <= d(E, F) ? B_rgb : F_rgb;
+		PixelRGB4 B_rgb = inputRGB[(t_row-1) * tileCols + t_col];
+		PixelRGB4 F_rgb = inputRGB[t_row * tileCols + (t_col+1)];
+		PixelRGB newColor = rgb4_to_rgb(d(B, E) <= d(E, F) ? B_rgb : F_rgb);
 
 		if (YUV_equals(A, F) && YUV_equals(B, I)) {
 			TR_INT2_T(scaleFactor, out, out_cols, newColor);
