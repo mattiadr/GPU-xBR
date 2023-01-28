@@ -31,14 +31,16 @@ __global__ void rgb_to_rgb3_kernel(unsigned int length, PixelRGB *input, PixelRG
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= length)
 		return;
-	output[index] = (PixelRGB3) {.R = input[index].R, .G = input[index].G, .B = input[index].B};
+	PixelRGB p = input[index];
+	output[index] = (PixelRGB3) {.R = p.R, .G = p.G, .B = p.B};
 }
 
 __global__ void rgb3_to_rgb_kernel(unsigned int length, PixelRGB3 *input, PixelRGB *output) {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= length)
 		return;
-	output[index] = (PixelRGB) {.R = input[index].R, .G = input[index].G, .B = input[index].B};
+	PixelRGB3 p = input[index];
+	output[index] = (PixelRGB) {.R = p.R, .G = p.G, .B = p.B};
 }
 
 #endif
