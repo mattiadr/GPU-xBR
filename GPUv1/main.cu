@@ -21,7 +21,7 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 	const int i_col = o_col - OFFSET;
 
 	// declare shared memory
-	__shared__ PixelRGB4 sh_inputRGB[BLOCK_DIM * BLOCK_DIM];
+	__shared__ PixelRGB sh_inputRGB[BLOCK_DIM * BLOCK_DIM];
 	__shared__ PixelYUV sh_inputYUV[BLOCK_DIM * BLOCK_DIM];
 
 	// copy data in shared memory
@@ -56,7 +56,10 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 		// this should never happen
 		assert(false);
 	}
-	sh_inputRGB[t_row * blockDim.x + t_col] = rgb_to_rgb4(p);
+
+	__syncthreads();
+
+	sh_inputRGB[t_row * blockDim.x + t_col] = p;
 	sh_inputYUV[t_row * blockDim.x + t_col] = rgb_to_yuv(p);
 
 	__syncthreads();
@@ -69,13 +72,13 @@ __global__ void expand_pixel_kernel(const unsigned int rows, const unsigned int 
 }
 
 void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, PixelRGB *d_output, unsigned int scaleFactor) {
-	threadsPerBlock = dim3(BLOCK_DIM, BLOCK_DIM);
-	blocks = dim3(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
+	dim3 threadsPerBlock(BLOCK_DIM, BLOCK_DIM);
+	dim3 blocks(ceil(cols / (float) TILE_DIM), ceil(rows / (float) TILE_DIM));
 
 	// printf("expand_pixel_kernel: (%d, %d) blocks with (%d, %d) threads...\n", blocks.x, blocks.y, threadsPerBlock.x, threadsPerBlock.y);
 	expand_pixel_kernel<<<blocks, threadsPerBlock>>>(rows, cols, d_input, d_output, scaleFactor);
 
-	err = cudaDeviceSynchronize();
+	cudaError_t err = cudaDeviceSynchronize();
 
 	if (err != cudaSuccess){
 		printf("Failed to launch kernel (error code %d) %s!\n", cudaGetLastError(), cudaGetErrorString(err));
@@ -85,11 +88,14 @@ void expand_frame(unsigned int rows, unsigned int cols, PixelRGB *d_input, Pixel
 }
 
 void expand_image(std::string input_path, std::string output_path, unsigned int scaleFactor) {
-	cv::Mat img = cv::imread(input_path, cv::IMREAD_COLOR);
+	cv::Mat img_rgb = cv::imread(input_path, cv::IMREAD_COLOR);
+	cv::Mat img;
+	// convert image from 3 channels to 4
+	cv::cvtColor(img_rgb, img, cv::COLOR_BGR2BGRA);
+
 	PixelRGB *output = (PixelRGB *) malloc(img.rows * img.cols * scaleFactor * scaleFactor * sizeof (PixelRGB));
 
 	PixelRGB *d_input, *d_output;
-
 	cudaMalloc((void **) &d_input, (img.rows * img.cols) * sizeof(PixelRGB));
 	cudaMalloc((void **) &d_output, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB));
 
@@ -99,8 +105,10 @@ void expand_image(std::string input_path, std::string output_path, unsigned int 
 
 	cudaMemcpy(output, d_output, (img.rows * img.cols * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
 
-	cv::Mat img_out(img.rows * scaleFactor, img.cols * scaleFactor, CV_8UC3, (void *) output);
-	cv::imwrite(output_path, img_out);
+	cv::Mat img_out(img.rows * scaleFactor, img.cols * scaleFactor, CV_8UC4, (void *) output);
+	// convert image from 4 channels to 3
+	cv::cvtColor(img_out, img_rgb, cv::COLOR_BGRA2BGR);
+	cv::imwrite(output_path, img_rgb);
 }
 
 void expand_video(std::string input_path, std::string output_path, unsigned int scaleFactor) {
@@ -120,33 +128,37 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 	cv::VideoWriter out_video(output_path, fourcc, fps, cv::Size(frame_width * scaleFactor, frame_heigth * scaleFactor));
 
 	// allocate memory on device
-	unsigned char *d_raw_data;
-	PixelRGB *d_rgb_data, *d_output;
-	PixelYUV *d_yuv_data;
+	PixelRGB *d_input, *d_output;
 
-	cudaMalloc((void **) &d_raw_data, (frame_heigth * frame_width) * 3 * sizeof(unsigned char));
-	cudaMalloc((void **) &d_rgb_data, (frame_heigth * frame_width) * sizeof(PixelRGB));
+	cudaMalloc((void **) &d_input, (frame_heigth * frame_width) * sizeof(PixelRGB));
 	cudaMalloc((void **) &d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB));
-	cudaMalloc((void **) &d_yuv_data, (frame_heigth * frame_width) * sizeof(PixelYUV));
 
 	// process frames
-	cv::Mat frame;
+	cv::Mat frame_rgb;
 	while (1) {
-		video >> frame;
-		if (frame.empty())
+		video >> frame_rgb;
+		if (frame_rgb.empty())
 			break;
 
-		// copy data to device
-		cudaMemcpy(d_raw_data, frame.data, (frame_heigth * frame_width) * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
+		cv::Mat frame;
+		// convert frame from 3 channels to 4
+		cv::cvtColor(frame_rgb, frame, cv::COLOR_BGR2BGRA);
 
-		expand_frame(frame_heigth, frame_width, d_raw_data, d_rgb_data, d_yuv_data, d_output, scaleFactor);
+		// copy data to device
+		cudaMemcpy(d_input, frame.data, (frame_heigth * frame_width) * sizeof(PixelRGB), cudaMemcpyHostToDevice);
+
+		expand_frame(frame_heigth, frame_width, d_input, d_output, scaleFactor);
 
 		// copy data from device
 		cudaMemcpy(output, d_output, (frame_heigth * frame_width * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
 
+		cv::Mat frame_out = cv::Mat(frame_heigth * scaleFactor, frame_width * scaleFactor, CV_8UC4, (void *) output);
+
+		// convert frame from 4 channels to 3
+		cv::cvtColor(frame_out, frame_rgb, cv::COLOR_BGRA2BGR);
+
 		// save frame to video
-		cv::Mat frame_out = cv::Mat(frame_heigth * scaleFactor, frame_width * scaleFactor, CV_8UC3, (void *) output);
-		out_video << frame_out;
+		out_video << frame_rgb;
 	}
 	video.release();
 	out_video.release();
