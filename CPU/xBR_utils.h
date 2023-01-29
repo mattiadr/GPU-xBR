@@ -10,8 +10,7 @@ unsigned int d(const PixelYUV a, const PixelYUV b) {
 }
 
 int YUV_equals(PixelYUV a, PixelYUV b) {
-	// TODO ??
-	return d(a, b) < 800;
+	return d(a, b) <= 600;
 }
 
 PixelYUV get_YUV(unsigned int rows, unsigned int cols, PixelYUV *input, int row, int col) {
