@@ -73,7 +73,7 @@ void expand_capture(unsigned int scaleFactor) {
 	unsigned int child_count;
 	if (XQueryTree(disp, win, &root_ret, &parent_ret, &child_ret, &child_count)) {
 		if (child_count >= 2) {
-			win = child_ret[1];
+			win = child_ret[child_count - 1];
 		}
 	}
 
