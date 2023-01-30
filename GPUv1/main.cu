@@ -188,21 +188,31 @@ void expand_video(std::string input_path, std::string output_path, unsigned int 
 }
 
 int main(int argc, char const *argv[]) {
-	if (argc < 5) {
-		std::cout << "USAGE - " << argv[0] << ": scaleFactor type inputFile outputFile" << std::endl;
-		std::cout << "TYPES: (i)mage, (v)ideo" << std::endl;
+	if (argc < 3) {
+		std::cout << "USAGE - " << argv[0] << ": scaleFactor type [inputFile] [outputFile]" << std::endl;
+		std::cout << "TYPES: (i)mage, (v)ideo, (c)apture" << std::endl;
 		return 0;
 	}
 
 	int scaleFactor = atoi(argv[1]);
 	std::string type = argv[2];
-	std::string input_path = argv[3];
-	std::string output_path = argv[4];
 	
 	if (type == "i" || type == "image") {
+		if (argc < 5) {
+			std::cerr << "Missing file" << std::endl;
+			return 1;
+		}
+		std::string input_path = argv[3];
+		std::string output_path = argv[4];
 		expand_image(input_path, output_path, scaleFactor);
 		return 0;
 	} else if (type == "v" || type == "video") {
+		if (argc < 5) {
+			std::cerr << "Missing file" << std::endl;
+			return 1;
+		}
+		std::string input_path = argv[3];
+		std::string output_path = argv[4];
 		expand_video(input_path, output_path, scaleFactor);
 		return 0;
 	} else if (type == "c" || type == "capture") {
