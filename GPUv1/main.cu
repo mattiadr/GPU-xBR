@@ -6,6 +6,8 @@
 #include "img_utils.h"
 #include "xBR_utils.h"
 
+#include "video_capture.c"
+
 #define BLOCK_DIM 32
 #define TILE_DIM 28
 #define OFFSET 2
@@ -203,6 +205,8 @@ int main(int argc, char const *argv[]) {
 	} else if (type == "v" || type == "video") {
 		expand_video(input_path, output_path, scaleFactor);
 		return 0;
+	} else if (type == "c" || type == "capture") {
+		expand_capture(scaleFactor);
 	}
 
 	std::cerr << "Type not recognized" << std::endl;
