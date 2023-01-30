@@ -9,9 +9,10 @@ PoliTO GPU Programming project (xBR pixel art upscaling algorithm)
 
 Dependencies:
 - opencv4
+- Xlib
 
 ```bash
-nvcc `pkg-config --libs --cflags opencv4` GPUv0/main.cu -o main.out -maxrregcount 32 -O3
+nvcc `pkg-config --libs --cflags opencv4` -lX11 -maxrregcount 32 -O3 main.cu -o main.out
 ```
 
 ## How to run
