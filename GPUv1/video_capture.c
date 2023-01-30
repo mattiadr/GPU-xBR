@@ -69,6 +69,14 @@ void expand_capture(unsigned int scaleFactor) {
 		exit(1);
 	}
 
+	Window root_ret, parent_ret, *child_ret;
+	unsigned int child_count;
+	if (XQueryTree(disp, win, &root_ret, &parent_ret, &child_ret, &child_count)) {
+		if (child_count >= 2) {
+			win = child_ret[1];
+		}
+	}
+
 	// get attributes
 	XWindowAttributes xwa;
 	if (!XGetWindowAttributes(disp, win, &xwa)) {
@@ -81,7 +89,6 @@ void expand_capture(unsigned int scaleFactor) {
 
 	// allocate memory
 	PixelRGB *input = (PixelRGB *) malloc(height * width * sizeof (PixelRGB));
-	PixelRGB *output = (PixelRGB *) malloc(height * width * scaleFactor * scaleFactor * sizeof (PixelRGB));
 
 	// allocate memory on device
 	PixelRGB *d_input, *d_output;
@@ -89,11 +96,21 @@ void expand_capture(unsigned int scaleFactor) {
 	cudaMalloc((void **) &d_input, (height * width) * sizeof(PixelRGB));
 	cudaMalloc((void **) &d_output, (height * width * scaleFactor * scaleFactor) * sizeof(PixelRGB));
 
-	XImage *image;
+	XImage *image = XGetImage(disp, win, 0, 0, width, height, AllPlanes, ZPixmap);
+
+	if (image == NULL) {
+		fprintf(stdout, "Couldn't get image.\n");
+		exit(1);
+	}
+
+	unsigned char frame_count = 0;
+	std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+
+	cv::Mat mat_out = cv::Mat(height * scaleFactor, width * scaleFactor, CV_8UC4);
 
 	while (1) {
 		// grab image
-		image = XGetImage(disp, win, 0, 0, width, height, AllPlanes, ZPixmap);
+		image = XGetSubImage(disp, win, 0, 0, width, height, AllPlanes, ZPixmap, image, 0, 0);
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				unsigned long pixel = XGetPixel(image, x, y);
@@ -102,7 +119,6 @@ void expand_capture(unsigned int scaleFactor) {
 				input[y * width + x].R = (unsigned char) ((pixel & image->red_mask) >> 16);
 			}
 		}
-		free(image);
 
 		// copy data to device
 		cudaMemcpy(d_input, input, (height * width) * sizeof(PixelRGB), cudaMemcpyHostToDevice);
@@ -110,10 +126,17 @@ void expand_capture(unsigned int scaleFactor) {
 		expand_screenshot_frame(height, width, d_input, d_output, scaleFactor);
 
 		// copy data from device
-		cudaMemcpy(output, d_output, (height * width * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
-		cv::Mat mat_out = cv::Mat(height * scaleFactor, width * scaleFactor, CV_8UC4, (void *) output);
+		cudaMemcpy(mat_out.data, d_output, (height * width * scaleFactor * scaleFactor) * sizeof(PixelRGB), cudaMemcpyDeviceToHost);
 
 		cv::imshow("Output", mat_out);
 		cv::waitKey(1);
+
+		frame_count++;
+		if (frame_count >= 100) {
+			std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+			std::cout << "FPS: " << frame_count / std::chrono::duration_cast<std::chrono::duration<double>>(now - start_time).count() << std::endl;
+			frame_count = 0;
+			start_time = now;
+		}
 	}
 }
